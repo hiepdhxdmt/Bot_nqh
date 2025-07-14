@@ -53,7 +53,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/post <link> - Submit a new post (-20 points)\n"
         "/vip - Upgrade to VIP (-10 points)\n\n"
         "Point System:\n"
-        "Add post = -20 pts\nReply = +5 pts\nVIP upgrade = -10 pts"
+        "Add post = -20 pts\nReply = +5 pts\nVIP upgrade = -10 pts\n"
+        "📌 New members receive 20 points at signup!"
     )
     await update.message.reply_text(help_text)
 
@@ -61,9 +62,9 @@ async def signup(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     username = update.effective_user.username
     try:
-        cursor.execute("INSERT INTO users (telegram_id, username, points) VALUES (?, ?, 0)", (user_id, username))
+        cursor.execute("INSERT INTO users (telegram_id, username, points) VALUES (?, ?, 20)", (user_id, username))
         conn.commit()
-        await update.message.reply_text("Signup successful! Use /post to submit your link.")
+        await update.message.reply_text("🎉 Signup successful! You received 20 points. Use /post to submit your link.")
     except sqlite3.IntegrityError:
         await update.message.reply_text("You're already signed up.")
 
