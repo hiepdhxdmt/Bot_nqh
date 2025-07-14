@@ -1,7 +1,7 @@
 import sqlite3
 import json
-from telegram.ext import Application, CommandHandler, ContextTypes
-from telegram import Update
+from telegram import Application, Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import CommandHandler, ContextTypes
 from datetime import datetime, timedelta
 
 # Load config
@@ -33,9 +33,24 @@ CREATE TABLE IF NOT EXISTS posts (
 """)
 conn.commit()
 
-# Command handlers
+# Keyboard for menu
+def get_menu_keyboard():
+    keyboard = [
+        [InlineKeyboardButton("Start", callback_data="start")],
+        [InlineKeyboardButton("Help", callback_data="help")],
+        [InlineKeyboardButton("Signup", callback_data="signup")],
+        [InlineKeyboardButton("Info", callback_data="info")],
+        [InlineKeyboardButton("My Posts", callback_data="my_posts")],
+        [InlineKeyboardButton("All Posts", callback_data="all_posts")],
+        [InlineKeyboardButton("VIP Upgrade", callback_data="vip")],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+# Command Handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Welcome! Use /signup to register and start earning points.")
+    await update.message.reply_text(
+        "Welcome! Choose an action:", reply_markup=get_menu_keyboard()
+    )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = (
