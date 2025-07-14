@@ -1,7 +1,7 @@
 import sqlite3
 import json
-from telegram import Application, Update
-from telegram.ext import CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram import Update
 from datetime import datetime, timedelta
 
 # Load config
@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS posts (
 """)
 conn.commit()
 
+# Command handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Welcome! Use /signup to register and start earning points.")
 
@@ -156,20 +157,19 @@ async def vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     conn.commit()
     await update.message.reply_text("You are now a VIP! 🎉")
 
+# Main function to start bot
 def main():
     application = Application.builder().token(TOKEN).build()
 
-    dp = application.dispatcher
-
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help_command))
-    dp.add_handler(CommandHandler("signup", signup))
-    dp.add_handler(CommandHandler("info", info))
-    dp.add_handler(CommandHandler("post", post))
-    dp.add_handler(CommandHandler("my_posts", my_posts))
-    dp.add_handler(CommandHandler("all_posts", all_posts))
-    dp.add_handler(CommandHandler("my_user", my_user))
-    dp.add_handler(CommandHandler("vip", vip))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("signup", signup))
+    application.add_handler(CommandHandler("info", info))
+    application.add_handler(CommandHandler("post", post))
+    application.add_handler(CommandHandler("my_posts", my_posts))
+    application.add_handler(CommandHandler("all_posts", all_posts))
+    application.add_handler(CommandHandler("my_user", my_user))
+    application.add_handler(CommandHandler("vip", vip))
 
     application.run_polling()
     application.idle()
