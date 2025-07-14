@@ -1,6 +1,7 @@
 import sqlite3
 import json
-from telegram.ext import Updater, CommandHandler
+from telegram import Application, Update
+from telegram.ext import CommandHandler, ContextTypes
 from datetime import datetime, timedelta
 
 # Load config
@@ -32,10 +33,10 @@ CREATE TABLE IF NOT EXISTS posts (
 """)
 conn.commit()
 
-def start(update, context):
-    update.message.reply_text("Welcome! Use /signup to register and start earning points.")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Welcome! Use /signup to register and start earning points.")
 
-def help_command(update, context):
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = (
         "Bot Commands:\n\n"
         "Basic:\n"
@@ -53,61 +54,61 @@ def help_command(update, context):
         "Point System:\n"
         "Add post = -20 pts\nReply = +5 pts\nVIP upgrade = -10 pts"
     )
-    update.message.reply_text(help_text)
+    await update.message.reply_text(help_text)
 
-def signup(update, context):
+async def signup(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     username = update.effective_user.username
     try:
         cursor.execute("INSERT INTO users (telegram_id, username, points) VALUES (?, ?, 0)", (user_id, username))
         conn.commit()
-        update.message.reply_text("Signup successful! Use /post to submit your link.")
+        await update.message.reply_text("Signup successful! Use /post to submit your link.")
     except sqlite3.IntegrityError:
-        update.message.reply_text("You're already signed up.")
+        await update.message.reply_text("You're already signed up.")
 
-def info(update, context):
+async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     cursor.execute("SELECT points, vip FROM users WHERE telegram_id=?", (user_id,))
     user = cursor.fetchone()
     if user:
         points, vip = user
         vip_status = "✅ VIP" if vip else "❌ Regular"
-        update.message.reply_text(f"Your points: {points}\nStatus: {vip_status}")
+        await update.message.reply_text(f"Your points: {points}\nStatus: {vip_status}")
     else:
-        update.message.reply_text("Please /signup first.")
+        await update.message.reply_text("Please /signup first.")
 
-def post(update, context):
+async def post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if len(context.args) == 0:
-        update.message.reply_text("Please include your post link after /post")
+        await update.message.reply_text("Please include your post link after /post")
         return
     link = context.args[0]
     cursor.execute("SELECT id, points FROM users WHERE telegram_id=?", (user_id,))
     user = cursor.fetchone()
     if not user:
-        update.message.reply_text("You must /signup before posting.")
+        await update.message.reply_text("You must /signup before posting.")
         return
     uid, points = user
     if points < 20:
-        update.message.reply_text("Not enough points (need 20).")
+        await update.message.reply_text("Not enough points (need 20).")
         return
     cursor.execute("INSERT INTO posts (user_id, link) VALUES (?, ?)", (uid, link))
     cursor.execute("UPDATE users SET points = points - 20 WHERE id=?", (uid,))
     conn.commit()
-    update.message.reply_text("Post submitted successfully. You lost 20 points.")
+    await update.message.reply_text("Post submitted successfully. You lost 20 points.")
 
-def my_posts(update, context):
+async def my_posts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     cursor.execute("SELECT id FROM users WHERE telegram_id=?", (user_id,))
     user = cursor.fetchone()
     if not user:
-        update.message.reply_text("Please /signup first.")
+        await update.message.reply_text("Please /signup first.")
         return
     uid = user[0]
     cursor.execute("SELECT link, created_at FROM posts WHERE user_id=? ORDER BY created_at DESC", (uid,))
     posts = cursor.fetchall()
     if not posts:
-        update.message.reply_text("You have no posts.")
+        await update.message.reply_text("You have no posts.")
         return
     now = datetime.now()
     response = "📝 Your Posts:\n"
@@ -116,13 +117,13 @@ def my_posts(update, context):
         age = now - created_time
         status = "🟢" if age < timedelta(hours=12) else "🔴"
         response += f"{status} {link} ({created})\n"
-    update.message.reply_text(response)
+    await update.message.reply_text(response)
 
-def all_posts(update, context):
+async def all_posts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cursor.execute("SELECT link, created_at FROM posts ORDER BY created_at DESC LIMIT 20")
     posts = cursor.fetchall()
     if not posts:
-        update.message.reply_text("No posts found.")
+        await update.message.reply_text("No posts found.")
         return
     now = datetime.now()
     response = "📢 All Posts:\n"
@@ -131,33 +132,34 @@ def all_posts(update, context):
         age = now - created_time
         status = "🟢" if age < timedelta(hours=12) else "🔴"
         response += f"{status} {link} ({created})\n"
-    update.message.reply_text(response)
+    await update.message.reply_text(response)
 
-def my_user(update, context):
+async def my_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.effective_user.username or "No username"
-    update.message.reply_text(f"Your username: @{username}")
+    await update.message.reply_text(f"Your username: @{username}")
 
-def vip(update, context):
+async def vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     cursor.execute("SELECT points, vip FROM users WHERE telegram_id=?", (user_id,))
     user = cursor.fetchone()
     if not user:
-        update.message.reply_text("Please /signup first.")
+        await update.message.reply_text("Please /signup first.")
         return
     points, vip = user
     if vip:
-        update.message.reply_text("You're already a VIP!")
+        await update.message.reply_text("You're already a VIP!")
         return
     if points < 10:
-        update.message.reply_text("Not enough points to upgrade (need 10).")
+        await update.message.reply_text("Not enough points to upgrade (need 10).")
         return
     cursor.execute("UPDATE users SET vip = 1, points = points - 10 WHERE telegram_id=?", (user_id,))
     conn.commit()
-    update.message.reply_text("You are now a VIP! 🎉")
+    await update.message.reply_text("You are now a VIP! 🎉")
 
 def main():
-    updater = Updater(TOKEN, use_context=True)
-    dp = updater.dispatcher
+    application = Application.builder().token(TOKEN).build()
+
+    dp = application.dispatcher
 
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help_command))
@@ -169,8 +171,8 @@ def main():
     dp.add_handler(CommandHandler("my_user", my_user))
     dp.add_handler(CommandHandler("vip", vip))
 
-    updater.start_polling()
-    updater.idle()
+    application.run_polling()
+    application.idle()
 
 if __name__ == '__main__':
     main()
