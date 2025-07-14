@@ -1,7 +1,7 @@
 import sqlite3
 import json
-from telegram import Update
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Application, Update, InlineKeyboardButton, InlineKeyboardMarkup  # Import trực tiếp từ telegram
+from telegram.ext import CommandHandler, ContextTypes
 from datetime import datetime, timedelta
 
 # Load config
